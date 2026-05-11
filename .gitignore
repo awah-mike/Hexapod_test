@@ -2,6 +2,7 @@ __pycache__/
 *.py[cod]
 *$py.class
 *.so
+*.egg-info/
 .Python
 .venv/
 venv/
@@ -24,3 +25,8 @@ outputs/
 checkpoints/
 *.pth
 *.ckpt
+
+# Isaac Lab URDF converter cache metadata. The USD files are committed, but
+# these sidecars contain machine-local paths and can be regenerated.
+assets/robots/hexapod/.asset_hash
+assets/robots/hexapod/config.yaml

@@ -1,0 +1,21 @@
+[package]
+
+version = "0.1.0"
+category = "isaaclab"
+readme = "README.md"
+
+title = "Hexapod Lab"
+author = "awah-mike"
+maintainer = "awah-mike"
+description = "Isaac Lab assets and tasks for the custom 18-DOF hexapod."
+repository = "https://github.com/awah-mike/Hexapod_test"
+keywords = ["isaaclab", "hexapod", "reinforcement-learning"]
+
+[dependencies]
+"isaaclab" = {}
+"isaaclab_assets" = {}
+"isaaclab_rl" = {}
+"isaaclab_tasks" = {}
+
+[[python.module]]
+name = "hexapod_lab"

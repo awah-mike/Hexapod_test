@@ -31,38 +31,33 @@ def main():
 
     app = AppLauncher(headless=True).app
 
-    # Try the new Isaac Sim 5.x API first, fall back to omni.importer.urdf for older versions.
-    try:
-        from isaacsim.asset.importer.urdf import _urdf  # type: ignore
-        importer_iface = _urdf.acquire_urdf_interface()
-        api = "isaacsim.asset.importer.urdf"
-    except ImportError:
-        from omni.importer.urdf import _urdf  # type: ignore
-        importer_iface = _urdf.acquire_urdf_interface()
-        api = "omni.importer.urdf"
+    from isaaclab.sim.converters import UrdfConverter, UrdfConverterCfg  # type: ignore
 
-    print(f"Using importer API: {api}")
+    print("Using Isaac Lab UrdfConverter")
     print(f"Input URDF:  {URDF_PATH}")
     print(f"Output USD:  {USD_PATH}")
     assert URDF_PATH.is_file(), f"URDF not found at {URDF_PATH}"
 
-    cfg = _urdf.ImportConfig()
-    cfg.merge_fixed_joints = False         # keep joint hierarchy explicit
-    cfg.fix_base = False                    # mobile robot, free-floating base
-    cfg.make_default_prim = True
-    cfg.import_inertia_tensor = True        # use URDF inertias, don't recompute
-    cfg.density = 0.0                        # 0 means "trust the URDF inertia/mass"
-    cfg.distance_scale = 1.0                # URDF is in meters already
-    cfg.convex_decomp = False                # use raw STL collision (may be slow; revisit)
-    cfg.self_collision = False               # let Isaac Lab manage self-collision later
-    cfg.create_physics_scene = False         # we'll create our own scene
-    cfg.parse_mimic = True
-
-    # Run import
     USD_PATH.parent.mkdir(parents=True, exist_ok=True)
-    importer_iface.import_robot(str(URDF_PATH), str(USD_PATH), cfg)
-    print(f"\nUSD written to {USD_PATH}")
-    print("File size:", USD_PATH.stat().st_size, "bytes")
+    cfg = UrdfConverterCfg(
+        asset_path=str(URDF_PATH),
+        usd_dir=str(USD_PATH.parent),
+        usd_file_name=USD_PATH.name,
+        fix_base=False,
+        merge_fixed_joints=False,
+        force_usd_conversion=True,
+        link_density=0.0,
+        self_collision=False,
+        collision_from_visuals=False,
+        collider_type="convex_hull",
+        joint_drive=UrdfConverterCfg.JointDriveCfg(
+            gains=UrdfConverterCfg.JointDriveCfg.PDGainsCfg(stiffness=40.0, damping=2.0),
+            target_type="position",
+        ),
+    )
+    converter = UrdfConverter(cfg)
+    print(f"\nUSD written to {converter.usd_path}")
+    print("File size:", Path(converter.usd_path).stat().st_size, "bytes")
 
     app.close()
 
