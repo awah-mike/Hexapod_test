@@ -1,0 +1,514 @@
+<?xml version="1.0" ?>
+<robot name="assembly" xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+<xacro:include filename="$(find assembly_description)/urdf/materials.xacro" />
+<xacro:include filename="$(find assembly_description)/urdf/assembly.trans" />
+<xacro:include filename="$(find assembly_description)/urdf/assembly.gazebo" />
+<link name="base_link">
+  <inertial>
+    <origin xyz="0.0008471798785983058 0.004861289651277688 -0.008482185119927165" rpy="0 0 0"/>
+    <mass value="11.263155017509012"/>
+    <inertia ixx="0.253898" iyy="0.08278" izz="0.33649" ixy="0.0" iyz="0.0" ixz="0.0"/>
+  </inertial>
+  <visual>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="package://assembly_description/meshes/base_link.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+    <material name="silver"/>
+  </visual>
+  <collision>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="package://assembly_description/meshes/base_link.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+  </collision>
+</link>
+
+<link name="MR_coxa_1">
+  <inertial>
+    <origin xyz="-0.16134 0.051471 0.003482" rpy="0 0 0"/>
+    <mass value="0.0"/>
+    <inertia ixx="0.0" iyy="0.0" izz="0.0" ixy="0.0" iyz="0.0" ixz="0.0"/>
+  </inertial>
+  <visual>
+    <origin xyz="-0.16134 0.051471 0.003482" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="package://assembly_description/meshes/MR_coxa_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+    <material name="silver"/>
+  </visual>
+  <collision>
+    <origin xyz="-0.16134 0.051471 0.003482" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="package://assembly_description/meshes/MR_coxa_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+  </collision>
+</link>
+
+<link name="FR_coxa_1">
+  <inertial>
+    <origin xyz="-0.090847 -0.255486 0.003482" rpy="0 0 0"/>
+    <mass value="0.0"/>
+    <inertia ixx="0.0" iyy="0.0" izz="0.0" ixy="0.0" iyz="0.0" ixz="0.0"/>
+  </inertial>
+  <visual>
+    <origin xyz="-0.090847 -0.255486 0.003482" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="package://assembly_description/meshes/FR_coxa_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+    <material name="silver"/>
+  </visual>
+  <collision>
+    <origin xyz="-0.090847 -0.255486 0.003482" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="package://assembly_description/meshes/FR_coxa_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+  </collision>
+</link>
+
+<link name="BR_coxa_1">
+  <inertial>
+    <origin xyz="-0.080847 0.23279 0.003482" rpy="0 0 0"/>
+    <mass value="0.0"/>
+    <inertia ixx="0.0" iyy="0.0" izz="0.0" ixy="0.0" iyz="0.0" ixz="0.0"/>
+  </inertial>
+  <visual>
+    <origin xyz="-0.080847 0.23279 0.003482" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="package://assembly_description/meshes/BR_coxa_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+    <material name="silver"/>
+  </visual>
+  <collision>
+    <origin xyz="-0.080847 0.23279 0.003482" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="package://assembly_description/meshes/BR_coxa_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+  </collision>
+</link>
+
+<link name="FL_coxa_1">
+  <inertial>
+    <origin xyz="0.089153 -0.255486 0.003482" rpy="0 0 0"/>
+    <mass value="0.0"/>
+    <inertia ixx="0.0" iyy="0.0" izz="0.0" ixy="0.0" iyz="0.0" ixz="0.0"/>
+  </inertial>
+  <visual>
+    <origin xyz="0.089153 -0.255486 0.003482" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="package://assembly_description/meshes/FL_coxa_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+    <material name="silver"/>
+  </visual>
+  <collision>
+    <origin xyz="0.089153 -0.255486 0.003482" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="package://assembly_description/meshes/FL_coxa_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+  </collision>
+</link>
+
+<link name="FL_femur_1">
+  <inertial>
+    <origin xyz="-0.11029048242100645 0.035471989809574445 4.0271584568832286e-07" rpy="0 0 0"/>
+    <mass value="6.705065664318963"/>
+    <inertia ixx="0.01616" iyy="0.052204" izz="0.061001" ixy="0.023772" iyz="-0.0" ixz="0.0"/>
+  </inertial>
+  <visual>
+    <origin xyz="0.146674 -0.315226 -0.029046" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="package://assembly_description/meshes/FL_femur_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+    <material name="silver"/>
+  </visual>
+  <collision>
+    <origin xyz="0.146674 -0.315226 -0.029046" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="package://assembly_description/meshes/FL_femur_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+  </collision>
+</link>
+
+<link name="BL_tibia_1">
+  <inertial>
+    <origin xyz="-0.24365603913458905 -0.1435076247203662 -0.04432699297836132" rpy="0 0 0"/>
+    <mass value="2.550346216227082"/>
+    <inertia ixx="0.005636" iyy="0.012714" izz="0.01573" ixy="-0.006643" iyz="-0.001802" ixz="-0.002974"/>
+  </inertial>
+  <visual>
+    <origin xyz="0.344647 0.385059 -0.029047" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="package://assembly_description/meshes/BL_tibia_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+    <material name="silver"/>
+  </visual>
+  <collision>
+    <origin xyz="0.344647 0.385059 -0.029047" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="package://assembly_description/meshes/BL_tibia_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+  </collision>
+</link>
+
+<link name="ML_tibia_1">
+  <inertial>
+    <origin xyz="-0.2827662078365218 -0.0024526810045005995 -0.044326992978361374" rpy="0 0 0"/>
+    <mass value="2.550346216227082"/>
+    <inertia ixx="0.001652" iyy="0.016698" izz="0.01573" ixy="-0.000257" iyz="-7.4e-05" ixz="-0.003476"/>
+  </inertial>
+  <visual>
+    <origin xyz="0.465705 0.050593 -0.029047" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="package://assembly_description/meshes/ML_tibia_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+    <material name="silver"/>
+  </visual>
+  <collision>
+    <origin xyz="0.465705 0.050593 -0.029047" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="package://assembly_description/meshes/ML_tibia_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+  </collision>
+</link>
+
+<link name="FL_tibia_1">
+  <inertial>
+    <origin xyz="-0.2573100817312584 0.11727917022203821 -0.044326992978362324" rpy="0 0 0"/>
+    <mass value="2.550346216227082"/>
+    <inertia ixx="0.004143" iyy="0.014207" izz="0.01573" ixy="0.005597" iyz="0.001402" ixz="-0.003182"/>
+  </inertial>
+  <visual>
+    <origin xyz="0.366165 -0.385628 -0.029047" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="package://assembly_description/meshes/FL_tibia_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+    <material name="silver"/>
+  </visual>
+  <collision>
+    <origin xyz="0.366165 -0.385628 -0.029047" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="package://assembly_description/meshes/FL_tibia_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+  </collision>
+</link>
+
+<link name="ML_coxa_1">
+  <inertial>
+    <origin xyz="0.159646 0.051471 0.003482" rpy="0 0 0"/>
+    <mass value="0.0"/>
+    <inertia ixx="0.0" iyy="0.0" izz="0.0" ixy="0.0" iyz="0.0" ixz="0.0"/>
+  </inertial>
+  <visual>
+    <origin xyz="0.159646 0.051471 0.003482" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="package://assembly_description/meshes/ML_coxa_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+    <material name="silver"/>
+  </visual>
+  <collision>
+    <origin xyz="0.159646 0.051471 0.003482" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="package://assembly_description/meshes/ML_coxa_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+  </collision>
+</link>
+
+<link name="BL_coxa_1">
+  <inertial>
+    <origin xyz="0.079153 0.23279 0.003482" rpy="0 0 0"/>
+    <mass value="0.0"/>
+    <inertia ixx="0.0" iyy="0.0" izz="0.0" ixy="0.0" iyz="0.0" ixz="0.0"/>
+  </inertial>
+  <visual>
+    <origin xyz="0.079153 0.23279 0.003482" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="package://assembly_description/meshes/BL_coxa_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+    <material name="silver"/>
+  </visual>
+  <collision>
+    <origin xyz="0.079153 0.23279 0.003482" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="package://assembly_description/meshes/BL_coxa_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+  </collision>
+</link>
+
+<link name="ML_femur_1">
+  <inertial>
+    <origin xyz="-0.1149484184032751 -0.01446297408074099 4.0271584682630146e-07" rpy="0 0 0"/>
+    <mass value="6.705065664318963"/>
+    <inertia ixx="0.004387" iyy="0.063977" izz="0.061001" ixy="0.001475" iyz="-0.0" ixz="0.0"/>
+  </inertial>
+  <visual>
+    <origin xyz="0.237025 0.021637 -0.029046" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="package://assembly_description/meshes/ML_femur_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+    <material name="silver"/>
+  </visual>
+  <collision>
+    <origin xyz="0.237025 0.021637 -0.029046" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="package://assembly_description/meshes/ML_femur_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+  </collision>
+</link>
+
+<link name="BL_femur_1">
+  <inertial>
+    <origin xyz="-0.09231673440290544 -0.06999931732268327 4.027158461185343e-07" rpy="0 0 0"/>
+    <mass value="6.705065664318963"/>
+    <inertia ixx="0.018008" iyy="0.050357" izz="0.061001" ixy="-0.025066" iyz="0.0" ixz="0.0"/>
+  </inertial>
+  <visual>
+    <origin xyz="0.161082 0.245643 -0.029046" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="package://assembly_description/meshes/BL_femur_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+    <material name="silver"/>
+  </visual>
+  <collision>
+    <origin xyz="0.161082 0.245643 -0.029046" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="package://assembly_description/meshes/BL_femur_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+  </collision>
+</link>
+
+<link name="FR_femur_1">
+  <inertial>
+    <origin xyz="0.10920092283881766 0.03493074590276829 6.761700534901882e-08" rpy="0 0 0"/>
+    <mass value="6.705065664318963"/>
+    <inertia ixx="0.01616" iyy="0.052204" izz="0.061001" ixy="-0.023772" iyz="0.0" ixz="0.0"/>
+  </inertial>
+  <visual>
+    <origin xyz="-0.148368 -0.315226 -0.029046" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="package://assembly_description/meshes/FR_femur_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+    <material name="silver"/>
+  </visual>
+  <collision>
+    <origin xyz="-0.148368 -0.315226 -0.029046" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="package://assembly_description/meshes/FR_femur_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+  </collision>
+</link>
+
+<link name="FR_tibia_1">
+  <inertial>
+    <origin xyz="0.2503203165467311 0.13134965047004704 -0.044326663176026085" rpy="0 0 0"/>
+    <mass value="2.550346216227082"/>
+    <inertia ixx="0.005144" iyy="0.013206" izz="0.01573" ixy="-0.006357" iyz="0.001688" ixz="0.00304"/>
+  </inertial>
+  <visual>
+    <origin xyz="-0.367859 -0.385628 -0.029046" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="package://assembly_description/meshes/FR_tibia_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+    <material name="silver"/>
+  </visual>
+  <collision>
+    <origin xyz="-0.367859 -0.385628 -0.029046" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="package://assembly_description/meshes/FR_tibia_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+  </collision>
+</link>
+
+<link name="BR_femur_1">
+  <inertial>
+    <origin xyz="0.09124841811037479 -0.06941726541801047 6.761700563351347e-08" rpy="0 0 0"/>
+    <mass value="6.705065664318963"/>
+    <inertia ixx="0.018008" iyy="0.050357" izz="0.061001" ixy="0.025066" iyz="-0.0" ixz="0.0"/>
+  </inertial>
+  <visual>
+    <origin xyz="-0.162776 0.245643 -0.029046" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="package://assembly_description/meshes/BR_femur_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+    <material name="silver"/>
+  </visual>
+  <collision>
+    <origin xyz="-0.162776 0.245643 -0.029046" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="package://assembly_description/meshes/BR_femur_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+  </collision>
+</link>
+
+<link name="BR_tibia_1">
+  <inertial>
+    <origin xyz="0.25117272765098597 -0.12971146666504613 -0.04432666317602593" rpy="0 0 0"/>
+    <mass value="2.550346216227082"/>
+    <inertia ixx="0.00458" iyy="0.01377" izz="0.01573" ixy="0.005962" iyz="-0.001522" ixz="0.003126"/>
+  </inertial>
+  <visual>
+    <origin xyz="-0.346341 0.385059 -0.029046" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="package://assembly_description/meshes/BR_tibia_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+    <material name="silver"/>
+  </visual>
+  <collision>
+    <origin xyz="-0.346341 0.385059 -0.029046" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="package://assembly_description/meshes/BR_tibia_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+  </collision>
+</link>
+
+<link name="MR_femur_1">
+  <inertial>
+    <origin xyz="0.11373220040839996 -0.014493049317919764 6.761700591800812e-08" rpy="0 0 0"/>
+    <mass value="6.705065664318963"/>
+    <inertia ixx="0.004387" iyy="0.063977" izz="0.061001" ixy="-0.001475" iyz="0.0" ixz="0.0"/>
+  </inertial>
+  <visual>
+    <origin xyz="-0.238719 0.021637 -0.029046" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="package://assembly_description/meshes/MR_femur_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+    <material name="silver"/>
+  </visual>
+  <collision>
+    <origin xyz="-0.238719 0.021637 -0.029046" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="package://assembly_description/meshes/MR_femur_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+  </collision>
+</link>
+
+<link name="MR_tibia_1">
+  <inertial>
+    <origin xyz="0.2823777690224717 0.013253497777558826 -0.044326663176026695" rpy="0 0 0"/>
+    <mass value="2.550346216227082"/>
+    <inertia ixx="0.001714" iyy="0.016635" izz="0.01573" ixy="-0.000999" iyz="0.000245" ixz="0.003468"/>
+  </inertial>
+  <visual>
+    <origin xyz="-0.467399 0.050593 -0.029046" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="package://assembly_description/meshes/MR_tibia_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+    <material name="silver"/>
+  </visual>
+  <collision>
+    <origin xyz="-0.467399 0.050593 -0.029046" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="package://assembly_description/meshes/MR_tibia_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+  </collision>
+</link>
+
+<joint name="Rigid 1" type="fixed">
+  <origin xyz="0.16134 -0.051471 -0.003482" rpy="0 0 0"/>
+  <parent link="base_link"/>
+  <child link="MR_coxa_1"/>
+</joint>
+
+<joint name="Rigid 2" type="fixed">
+  <origin xyz="0.090847 0.255486 -0.003482" rpy="0 0 0"/>
+  <parent link="base_link"/>
+  <child link="FR_coxa_1"/>
+</joint>
+
+<joint name="Rigid 3" type="fixed">
+  <origin xyz="0.080847 -0.23279 -0.003482" rpy="0 0 0"/>
+  <parent link="base_link"/>
+  <child link="BR_coxa_1"/>
+</joint>
+
+<joint name="Rigid 4" type="fixed">
+  <origin xyz="-0.089153 0.255486 -0.003482" rpy="0 0 0"/>
+  <parent link="base_link"/>
+  <child link="FL_coxa_1"/>
+</joint>
+
+<joint name="Rigid 8" type="fixed">
+  <origin xyz="-0.057521 0.05974 0.032528" rpy="0 0 0"/>
+  <parent link="FL_coxa_1"/>
+  <child link="FL_femur_1"/>
+</joint>
+
+<joint name="Rigid 16" type="fixed">
+  <origin xyz="-0.183565 -0.139416 1e-06" rpy="0 0 0"/>
+  <parent link="BL_femur_1"/>
+  <child link="BL_tibia_1"/>
+</joint>
+
+<joint name="Rigid 17" type="fixed">
+  <origin xyz="-0.22868 -0.028956 1e-06" rpy="0 0 0"/>
+  <parent link="ML_femur_1"/>
+  <child link="ML_tibia_1"/>
+</joint>
+
+<joint name="Rigid 18" type="fixed">
+  <origin xyz="-0.219491 0.070402 1e-06" rpy="0 0 0"/>
+  <parent link="FL_femur_1"/>
+  <child link="FL_tibia_1"/>
+</joint>
+
+<joint name="Rigid 19" type="fixed">
+  <origin xyz="-0.159646 -0.051471 -0.003482" rpy="0 0 0"/>
+  <parent link="base_link"/>
+  <child link="ML_coxa_1"/>
+</joint>
+
+<joint name="Rigid 20" type="fixed">
+  <origin xyz="-0.079153 -0.23279 -0.003482" rpy="0 0 0"/>
+  <parent link="base_link"/>
+  <child link="BL_coxa_1"/>
+</joint>
+
+<joint name="Rigid 21" type="fixed">
+  <origin xyz="-0.077379 0.029834 0.032528" rpy="0 0 0"/>
+  <parent link="ML_coxa_1"/>
+  <child link="ML_femur_1"/>
+</joint>
+
+<joint name="Rigid 22" type="fixed">
+  <origin xyz="-0.081929 -0.012853 0.032528" rpy="0 0 0"/>
+  <parent link="BL_coxa_1"/>
+  <child link="BL_femur_1"/>
+</joint>
+
+<joint name="Rigid 23" type="fixed">
+  <origin xyz="0.057521 0.05974 0.032528" rpy="0 0 0"/>
+  <parent link="FR_coxa_1"/>
+  <child link="FR_femur_1"/>
+</joint>
+
+<joint name="Rigid 24" type="fixed">
+  <origin xyz="0.219491 0.070402 0.0" rpy="0 0 0"/>
+  <parent link="FR_femur_1"/>
+  <child link="FR_tibia_1"/>
+</joint>
+
+<joint name="Rigid 25" type="fixed">
+  <origin xyz="0.081929 -0.012853 0.032528" rpy="0 0 0"/>
+  <parent link="BR_coxa_1"/>
+  <child link="BR_femur_1"/>
+</joint>
+
+<joint name="Rigid 26" type="fixed">
+  <origin xyz="0.183565 -0.139416 0.0" rpy="0 0 0"/>
+  <parent link="BR_femur_1"/>
+  <child link="BR_tibia_1"/>
+</joint>
+
+<joint name="Rigid 27" type="fixed">
+  <origin xyz="0.077379 0.029834 0.032528" rpy="0 0 0"/>
+  <parent link="MR_coxa_1"/>
+  <child link="MR_femur_1"/>
+</joint>
+
+<joint name="Rigid 28" type="fixed">
+  <origin xyz="0.22868 -0.028956 0.0" rpy="0 0 0"/>
+  <parent link="MR_femur_1"/>
+  <child link="MR_tibia_1"/>
+</joint>
+
+</robot>
