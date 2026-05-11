@@ -6,7 +6,7 @@
 import os
 
 import toml
-from setuptools import setup
+from setuptools import find_packages, setup
 
 EXTENSION_PATH = os.path.dirname(os.path.realpath(__file__))
 EXTENSION_TOML_DATA = toml.load(os.path.join(EXTENSION_PATH, "config", "extension.toml"))
@@ -15,7 +15,7 @@ INSTALL_REQUIRES = ["psutil"]
 
 setup(
     name="hexapod_lab",
-    packages=["hexapod_lab", "hexapod_lab.assets"],
+    packages=find_packages(),
     author=EXTENSION_TOML_DATA["package"]["author"],
     maintainer=EXTENSION_TOML_DATA["package"]["maintainer"],
     url=EXTENSION_TOML_DATA["package"]["repository"],
