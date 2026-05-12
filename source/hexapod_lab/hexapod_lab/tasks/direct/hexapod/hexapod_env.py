@@ -176,9 +176,15 @@ class HexapodEnv(DirectRLEnv):
 
         self._actions[env_ids] = 0.0
         self._previous_actions[env_ids] = 0.0
-        self._commands[env_ids, 0].uniform_(*self.cfg.lateral_velocity_range)
-        self._commands[env_ids, 1].uniform_(*self.cfg.forward_velocity_range)
-        self._commands[env_ids, 2].uniform_(*self.cfg.yaw_velocity_range)
+        self._commands[env_ids, 0] = torch.empty(len(env_ids), device=self.device).uniform_(
+            *self.cfg.lateral_velocity_range
+        )
+        self._commands[env_ids, 1] = torch.empty(len(env_ids), device=self.device).uniform_(
+            *self.cfg.forward_velocity_range
+        )
+        self._commands[env_ids, 2] = torch.empty(len(env_ids), device=self.device).uniform_(
+            *self.cfg.yaw_velocity_range
+        )
         self._forward_distance_traveled[env_ids] = 0.0
         self._lateral_distance_abs[env_ids] = 0.0
         self._command_forward_sum[env_ids] = 0.0
