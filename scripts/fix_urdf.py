@@ -39,13 +39,13 @@ THETA_DEG = {
 }
 
 # Joint limits in radians.
-# Coxa: +/- 45 degrees, symmetric.
+# Coxa: +/- 60 degrees, symmetric.
 # Femur: 0 to +70 deg on RIGHT, -70 to 0 deg on LEFT (asymmetric due to mirrored axes).
 # Tibia: -140 to 0 deg on RIGHT, 0 to +140 deg on LEFT.
 import math as _math
 DEG = _math.pi / 180.0
 LIMITS = {
-    "coxa":  {"R": (-45 * DEG, +45 * DEG),  "L": (-45 * DEG, +45 * DEG)},
+    "coxa":  {"R": (-60 * DEG, +60 * DEG),  "L": (-60 * DEG, +60 * DEG)},
     "femur": {"R": (0.0,       +70 * DEG),  "L": (-70 * DEG, 0.0)},
     "tibia": {"R": (-140 * DEG, 0.0),       "L": (0.0, +140 * DEG)},
 }

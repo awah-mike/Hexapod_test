@@ -388,7 +388,7 @@
     <parent link="base_link" />
     <child link="MR_coxa_1" />
     <axis xyz="0.0 0.0 1.0" />
-    <limit lower="-0.785398" upper="0.785398" effort="1000.0" velocity="100.0" />
+    <limit lower="-1.047198" upper="1.047198" effort="1000.0" velocity="100.0" />
     <dynamics damping="0.1" friction="0.01" />
   </joint>
   <joint name="FR_coxa_joint" type="revolute">
@@ -396,7 +396,7 @@
     <parent link="base_link" />
     <child link="FR_coxa_1" />
     <axis xyz="0.0 0.0 1.0" />
-    <limit lower="-0.785398" upper="0.785398" effort="1000.0" velocity="100.0" />
+    <limit lower="-1.047198" upper="1.047198" effort="1000.0" velocity="100.0" />
     <dynamics damping="0.1" friction="0.01" />
   </joint>
   <joint name="BR_coxa_joint" type="revolute">
@@ -404,7 +404,7 @@
     <parent link="base_link" />
     <child link="BR_coxa_1" />
     <axis xyz="0.0 0.0 1.0" />
-    <limit lower="-0.785398" upper="0.785398" effort="1000.0" velocity="100.0" />
+    <limit lower="-1.047198" upper="1.047198" effort="1000.0" velocity="100.0" />
     <dynamics damping="0.1" friction="0.01" />
   </joint>
   <joint name="FL_coxa_joint" type="revolute">
@@ -412,7 +412,7 @@
     <parent link="base_link" />
     <child link="FL_coxa_1" />
     <axis xyz="0.0 0.0 -1.0" />
-    <limit lower="-0.785398" upper="0.785398" effort="1000.0" velocity="100.0" />
+    <limit lower="-1.047198" upper="1.047198" effort="1000.0" velocity="100.0" />
     <dynamics damping="0.1" friction="0.01" />
   </joint>
   <joint name="FL_femur_joint" type="revolute">
@@ -452,7 +452,7 @@
     <parent link="base_link" />
     <child link="ML_coxa_1" />
     <axis xyz="0.0 0.0 -1.0" />
-    <limit lower="-0.785398" upper="0.785398" effort="1000.0" velocity="100.0" />
+    <limit lower="-1.047198" upper="1.047198" effort="1000.0" velocity="100.0" />
     <dynamics damping="0.1" friction="0.01" />
   </joint>
   <joint name="BL_coxa_joint" type="revolute">
@@ -460,7 +460,7 @@
     <parent link="base_link" />
     <child link="BL_coxa_1" />
     <axis xyz="0.0 0.0 -1.0" />
-    <limit lower="-0.785398" upper="0.785398" effort="1000.0" velocity="100.0" />
+    <limit lower="-1.047198" upper="1.047198" effort="1000.0" velocity="100.0" />
     <dynamics damping="0.1" friction="0.01" />
   </joint>
   <joint name="ML_femur_joint" type="revolute">

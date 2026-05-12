@@ -93,6 +93,8 @@ class HexapodFlatEnvCfg(DirectRLEnvCfg):
     joint_torque_reward_scale = -2.5e-5
     joint_accel_reward_scale = -2.5e-7
     action_rate_reward_scale = -0.01
+    action_saturation_reward_scale = -0.08
+    stillness_reward_scale = -1.0
     feet_air_time_reward_scale = 0.25
     base_contact_reward_scale = -2.0
     flat_orientation_reward_scale = -4.0

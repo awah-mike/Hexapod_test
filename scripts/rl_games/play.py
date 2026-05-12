@@ -37,6 +37,9 @@ parser.add_argument(
     help="When no checkpoint provided, use the last saved model. Otherwise use the best saved model.",
 )
 parser.add_argument("--real-time", action="store_true", default=False, help="Run in real-time, if possible.")
+parser.add_argument("--fixed_forward_velocity", type=float, default=None, help="Override command +Y velocity range.")
+parser.add_argument("--fixed_lateral_velocity", type=float, default=None, help="Override command +X velocity range.")
+parser.add_argument("--fixed_yaw_velocity", type=float, default=None, help="Override command yaw velocity range.")
 # append AppLauncher cli args
 AppLauncher.add_app_launcher_args(parser)
 # parse the arguments
@@ -95,6 +98,12 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agen
     # override configurations with non-hydra CLI arguments
     env_cfg.scene.num_envs = args_cli.num_envs if args_cli.num_envs is not None else env_cfg.scene.num_envs
     env_cfg.sim.device = args_cli.device if args_cli.device is not None else env_cfg.sim.device
+    if args_cli.fixed_forward_velocity is not None:
+        env_cfg.forward_velocity_range = (args_cli.fixed_forward_velocity, args_cli.fixed_forward_velocity)
+    if args_cli.fixed_lateral_velocity is not None:
+        env_cfg.lateral_velocity_range = (args_cli.fixed_lateral_velocity, args_cli.fixed_lateral_velocity)
+    if args_cli.fixed_yaw_velocity is not None:
+        env_cfg.yaw_velocity_range = (args_cli.fixed_yaw_velocity, args_cli.fixed_yaw_velocity)
 
     # randomly sample a seed if seed = -1
     if args_cli.seed == -1:
@@ -142,10 +151,12 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agen
 
     # create isaac environment
     env = gym.make(args_cli.task, cfg=env_cfg, render_mode="rgb_array" if args_cli.video else None)
+    base_env = env.unwrapped
 
     # convert to single-agent instance if required by the RL algorithm
     if isinstance(env.unwrapped, DirectMARLEnv):
         env = multi_agent_to_single_agent(env)
+        base_env = env.unwrapped
 
     # wrap for video recording
     if args_cli.video:
@@ -190,6 +201,36 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agen
     obs = env.reset()
     if isinstance(obs, dict):
         obs = obs["obs"]
+    fixed_command = (
+        args_cli.fixed_lateral_velocity,
+        args_cli.fixed_forward_velocity,
+        args_cli.fixed_yaw_velocity,
+    )
+
+    def apply_fixed_command():
+        if any(value is not None for value in fixed_command):
+            if fixed_command[0] is not None:
+                base_env._commands[:, 0] = fixed_command[0]
+            if fixed_command[1] is not None:
+                base_env._commands[:, 1] = fixed_command[1]
+            if fixed_command[2] is not None:
+                base_env._commands[:, 2] = fixed_command[2]
+
+    def patch_obs_command(obs_tensor):
+        if isinstance(obs_tensor, dict):
+            obs_tensor = obs_tensor["obs"]
+        if any(value is not None for value in fixed_command):
+            obs_tensor = obs_tensor.clone()
+            if fixed_command[0] is not None:
+                obs_tensor[:, 9] = fixed_command[0]
+            if fixed_command[1] is not None:
+                obs_tensor[:, 10] = fixed_command[1]
+            if fixed_command[2] is not None:
+                obs_tensor[:, 11] = fixed_command[2]
+        return obs_tensor
+
+    apply_fixed_command()
+    obs = patch_obs_command(obs)
     timestep = 0
     # required: enables the flag for batched observations
     _ = agent.get_batch_size(obs, 1)
@@ -204,12 +245,16 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agen
         start_time = time.time()
         # run everything in inference mode
         with torch.inference_mode():
+            apply_fixed_command()
+            obs = patch_obs_command(obs)
             # convert obs to agent format
             obs = agent.obs_to_torch(obs)
             # agent stepping
             actions = agent.get_action(obs, is_deterministic=agent.is_deterministic)
             # env stepping
             obs, _, dones, _ = env.step(actions)
+            if isinstance(obs, dict):
+                obs = obs["obs"]
 
             # perform operations for terminated episodes
             if len(dones) > 0:

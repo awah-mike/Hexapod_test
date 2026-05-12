@@ -37,12 +37,22 @@ class HexapodEnv(DirectRLEnv):
                 "dof_torques_l2",
                 "dof_acc_l2",
                 "action_rate_l2",
+                "action_saturation",
+                "forward_stillness",
                 "feet_air_time",
                 "base_contact",
                 "flat_orientation_l2",
                 "survival",
+                "episode_forward_velocity",
+                "episode_lateral_velocity_abs",
             ]
         }
+
+        self._forward_distance_traveled = torch.zeros(self.num_envs, dtype=torch.float, device=self.device)
+        self._lateral_distance_abs = torch.zeros(self.num_envs, dtype=torch.float, device=self.device)
+        self._command_forward_sum = torch.zeros(self.num_envs, dtype=torch.float, device=self.device)
+        self._action_saturation_accum = torch.zeros(self.num_envs, dtype=torch.float, device=self.device)
+        self._total_time = torch.zeros(self.num_envs, dtype=torch.float, device=self.device)
 
         self._base_id, _ = self._contact_sensor.find_bodies("base_link")
         self._feet_ids, _ = self._contact_sensor.find_bodies(".*_tibia_1")
@@ -99,6 +109,11 @@ class HexapodEnv(DirectRLEnv):
         joint_torques = torch.sum(torch.square(self._robot.data.applied_torque), dim=1)
         joint_accel = torch.sum(torch.square(self._robot.data.joint_acc), dim=1)
         action_rate = torch.sum(torch.square(self._actions - self._previous_actions), dim=1)
+        action_saturation = torch.mean(torch.square(torch.clamp(torch.abs(self._actions) - 0.85, min=0.0) / 0.15), dim=1)
+
+        forward_cmd_gate = (self._commands[:, 1] > 0.10).float()
+        forward_speed = self._robot.data.root_lin_vel_b[:, 1]
+        forward_stillness = forward_cmd_gate * torch.square(torch.clamp(0.08 - forward_speed, min=0.0) / 0.08)
 
         first_contact = self._contact_sensor.compute_first_contact(self.step_dt)[:, self._feet_ids]
         last_air_time = self._contact_sensor.data.last_air_time[:, self._feet_ids]
@@ -112,6 +127,15 @@ class HexapodEnv(DirectRLEnv):
         flat_orientation = torch.sum(torch.square(self._robot.data.projected_gravity_b[:, :2]), dim=1)
         survival = torch.ones(self.num_envs, device=self.device)
 
+        self._forward_distance_traveled += forward_speed * self.step_dt
+        self._lateral_distance_abs += torch.abs(self._robot.data.root_lin_vel_b[:, 0]) * self.step_dt
+        self._command_forward_sum += self._commands[:, 1] * self.step_dt
+        self._action_saturation_accum += action_saturation * self.step_dt
+        self._total_time += self.step_dt
+        total_time = torch.clamp(self._total_time, min=self.step_dt)
+        episode_forward_velocity = self._forward_distance_traveled / total_time
+        episode_lateral_velocity_abs = self._lateral_distance_abs / total_time
+
         rewards = {
             "track_body_xy_exp": lin_vel_error_mapped * self.cfg.lin_vel_reward_scale * self.step_dt,
             "track_yaw_exp": yaw_rate_error_mapped * self.cfg.yaw_rate_reward_scale * self.step_dt,
@@ -120,10 +144,14 @@ class HexapodEnv(DirectRLEnv):
             "dof_torques_l2": joint_torques * self.cfg.joint_torque_reward_scale * self.step_dt,
             "dof_acc_l2": joint_accel * self.cfg.joint_accel_reward_scale * self.step_dt,
             "action_rate_l2": action_rate * self.cfg.action_rate_reward_scale * self.step_dt,
+            "action_saturation": action_saturation * self.cfg.action_saturation_reward_scale * self.step_dt,
+            "forward_stillness": forward_stillness * self.cfg.stillness_reward_scale * self.step_dt,
             "feet_air_time": air_time * self.cfg.feet_air_time_reward_scale * self.step_dt,
             "base_contact": base_contact * self.cfg.base_contact_reward_scale * self.step_dt,
             "flat_orientation_l2": flat_orientation * self.cfg.flat_orientation_reward_scale * self.step_dt,
             "survival": survival * self.cfg.survival_reward_scale * self.step_dt,
+            "episode_forward_velocity": episode_forward_velocity * self.step_dt,
+            "episode_lateral_velocity_abs": episode_lateral_velocity_abs * self.step_dt,
         }
         reward = torch.sum(torch.stack(list(rewards.values())), dim=0)
         for key, value in rewards.items():
@@ -151,6 +179,11 @@ class HexapodEnv(DirectRLEnv):
         self._commands[env_ids, 0].uniform_(*self.cfg.lateral_velocity_range)
         self._commands[env_ids, 1].uniform_(*self.cfg.forward_velocity_range)
         self._commands[env_ids, 2].uniform_(*self.cfg.yaw_velocity_range)
+        self._forward_distance_traveled[env_ids] = 0.0
+        self._lateral_distance_abs[env_ids] = 0.0
+        self._command_forward_sum[env_ids] = 0.0
+        self._action_saturation_accum[env_ids] = 0.0
+        self._total_time[env_ids] = 0.0
 
         joint_pos = self._robot.data.default_joint_pos[env_ids]
         joint_vel = self._robot.data.default_joint_vel[env_ids]
