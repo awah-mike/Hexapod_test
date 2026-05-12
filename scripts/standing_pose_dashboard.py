@@ -8,12 +8,13 @@ The front-right leg is the reference leg:
 * The negative of that value is applied to FL/ML/BL tibia joints.
 * Coxa joints stay fixed at the current standing-pose value.
 
-Run:
+Run locally from the repo root:
 
-    /workspace/isaaclab/_isaac_sim/python.sh scripts/standing_pose_dashboard.py
+    python -m pip install numpy matplotlib
+    python scripts/standing_pose_dashboard.py
 
-If the cloud session has no interactive display, run this script after cloning
-the repo on a local machine with Python, NumPy, and Matplotlib installed.
+This script has no Isaac Sim / Isaac Lab dependency. It only needs Python,
+NumPy, and Matplotlib.
 """
 
 from __future__ import annotations
