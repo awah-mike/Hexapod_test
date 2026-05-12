@@ -41,7 +41,7 @@ class HexapodFlatEnvCfg(DirectRLEnvCfg):
 
     episode_length_s = 10.0
     decimation = 4
-    action_scale = 0.35
+    action_scale = 0.60
     action_space = 18
     observation_space = 66
     state_space = 0

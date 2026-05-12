@@ -109,7 +109,7 @@ class HexapodEnv(DirectRLEnv):
         joint_torques = torch.sum(torch.square(self._robot.data.applied_torque), dim=1)
         joint_accel = torch.sum(torch.square(self._robot.data.joint_acc), dim=1)
         action_rate = torch.sum(torch.square(self._actions - self._previous_actions), dim=1)
-        action_saturation = torch.mean(torch.square(torch.clamp(torch.abs(self._actions) - 0.85, min=0.0) / 0.15), dim=1)
+        action_saturation = torch.mean(torch.square(torch.clamp(torch.abs(self._actions) - 1.20, min=0.0) / 0.30), dim=1)
 
         forward_cmd_gate = (self._commands[:, 1] > 0.10).float()
         forward_speed = self._robot.data.root_lin_vel_b[:, 1]
