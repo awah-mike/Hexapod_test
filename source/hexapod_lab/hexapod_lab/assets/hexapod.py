@@ -45,12 +45,12 @@ STANDING_JOINT_POS = {
     "FL_femur_joint": -0.523599,
     "ML_femur_joint": -0.523599,
     "BL_femur_joint": -0.523599,
-    "FR_tibia_joint": -1.483530,
-    "MR_tibia_joint": -1.483530,
-    "BR_tibia_joint": -1.483530,
-    "FL_tibia_joint": 1.483530,
-    "ML_tibia_joint": 1.483530,
-    "BL_tibia_joint": 1.483530,
+    "FR_tibia_joint": -1.658063,
+    "MR_tibia_joint": -1.658063,
+    "BR_tibia_joint": -1.658063,
+    "FL_tibia_joint": 1.658063,
+    "ML_tibia_joint": 1.658063,
+    "BL_tibia_joint": 1.658063,
 }
 """Nominal spawn pose.
 
