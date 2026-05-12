@@ -34,6 +34,12 @@ parser.add_argument(
     help="Directory where initial and final viewport screenshots should be written.",
 )
 parser.add_argument(
+    "--snapshot-steps",
+    type=str,
+    default="",
+    help="Comma-separated physics step numbers to capture when --screenshot-dir is set.",
+)
+parser.add_argument(
     "--diagnostics-csv",
     type=Path,
     default=None,
@@ -128,6 +134,11 @@ def main() -> None:
 
     num_steps = args_cli.steps if args_cli.steps is not None else max(1, int(args_cli.seconds / sim_dt))
     report_every = max(1, int(args_cli.report_interval / sim_dt))
+    snapshot_steps = {
+        int(item.strip())
+        for item in args_cli.snapshot_steps.split(",")
+        if item.strip()
+    }
     joint_target = robot.data.default_joint_pos.clone()
     joint_names = list(robot.data.joint_names)
     max_abs_applied_by_joint = torch.zeros(len(joint_names), device=robot.device)
@@ -196,6 +207,8 @@ def main() -> None:
                 f"base xyz=({base_pos[0]:+.3f}, {base_pos[1]:+.3f}, {base_pos[2]:+.3f})",
                 flush=True,
             )
+        if args_cli.screenshot_dir is not None and (step + 1) in snapshot_steps:
+            capture_screenshot(args_cli.screenshot_dir / f"hexapod_step_{step + 1:04d}.png")
 
     base_pos = robot.data.root_pos_w[0].detach().cpu().tolist()
     joint_pos = robot.data.joint_pos[0].detach().cpu()
