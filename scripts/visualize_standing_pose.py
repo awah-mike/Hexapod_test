@@ -10,6 +10,7 @@ draws links, joint frames, rotation axes, and foot/body labels.
 from __future__ import annotations
 
 import ast
+import json
 import math
 import sys
 import xml.etree.ElementTree as ET
@@ -195,39 +196,200 @@ def render(out_html: Path) -> None:
         )
         return "\n".join(parts)
 
+    line_data = [
+        {
+            "parent": line["parent"],
+            "child": line["child"],
+            "joint": line["joint"],
+            "type": line["type"],
+            "p": [float(v) for v in line["p"]],
+            "c": [float(v) for v in line["c"]],
+            "q": float(line["q"]),
+        }
+        for line in lines
+    ]
+    point_data = [
+        {
+            "name": name,
+            "p": [float(v) for v in point],
+            "kind": "base" if name == "base_link" else "foot" if name in foot_links else "link",
+        }
+        for name, point in points.items()
+    ]
+
     pose_table = "\n".join(
         f"<tr><td>{name}</td><td>{value:.3f}</td></tr>" for name, value in sorted(joint_pos.items())
     )
-    html = f"""<!doctype html>
+    template = """<!doctype html>
 <html>
 <head>
   <meta charset="utf-8">
   <title>Hexapod Standing Pose</title>
   <style>
-    body {{ font-family: Inter, Arial, sans-serif; margin: 24px; color: #111827; }}
-    .grid {{ display: grid; grid-template-columns: 1fr; gap: 18px; }}
-    h1 {{ margin-bottom: 0; }}
-    h2 {{ margin: 18px 0 8px; }}
-    p {{ max-width: 900px; line-height: 1.45; }}
-    table {{ border-collapse: collapse; margin-top: 18px; }}
-    td, th {{ border: 1px solid #ddd; padding: 4px 10px; font-family: monospace; }}
-    th {{ background: #f3f4f6; }}
+    body { font-family: Inter, Arial, sans-serif; margin: 24px; color: #111827; background: #fff; }
+    .grid { display: grid; grid-template-columns: 1fr; gap: 18px; }
+    h1 { margin-bottom: 0; }
+    h2 { margin: 18px 0 8px; }
+    p { max-width: 980px; line-height: 1.45; }
+    table { border-collapse: collapse; margin-top: 18px; }
+    td, th { border: 1px solid #ddd; padding: 4px 10px; font-family: monospace; }
+    th { background: #f3f4f6; }
+    #viewer {
+      width: min(1200px, 100%);
+      height: 760px;
+      border: 1px solid #ddd;
+      background: #f8fafc;
+      position: relative;
+      overflow: hidden;
+    }
+    #viewer canvas { display: block; }
+    .hint {
+      position: absolute;
+      left: 12px;
+      bottom: 10px;
+      padding: 6px 9px;
+      border-radius: 6px;
+      background: rgba(255,255,255,0.86);
+      font-size: 12px;
+      color: #374151;
+      pointer-events: none;
+    }
   </style>
 </head>
 <body>
   <h1>Hexapod Isaac Lab Standing Pose</h1>
   <p>This is the current spawn pose from <code>STANDING_JOINT_POS</code>. Blue labels are the six tibia/foot links.
-  Black is <code>base_link</code>. Orange lines are revolute-joint link chains.</p>
+  Black is <code>base_link</code>. Orange lines are revolute-joint link chains. The 3D view maps robot <code>+X</code>
+  to red/right, robot <code>+Y</code> to green/forward, and robot <code>+Z</code> to blue/up.</p>
+  <h2>Interactive 3D View</h2>
+  <div id="viewer"><div class="hint">Left-drag rotate · right-drag pan · scroll zoom</div></div>
   <div class="grid">
-    {projection_svg("Top View: X right vs Y forward", 0, 1, "+X right", "+Y forward")}
-    {projection_svg("Side View: Y forward vs Z up", 1, 2, "+Y forward", "+Z up")}
-    {projection_svg("Front View: X right vs Z up", 0, 2, "+X right", "+Z up")}
+    __TOP_VIEW__
+    __SIDE_VIEW__
+    __FRONT_VIEW__
   </div>
   <h2>Standing Joint Angles</h2>
-  <table><tr><th>Joint pattern/name</th><th>rad</th></tr>{pose_table}</table>
+  <table><tr><th>Joint pattern/name</th><th>rad</th></tr>__POSE_TABLE__</table>
+  <script type="module">
+    import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.164.1/build/three.module.js";
+    import { OrbitControls } from "https://cdn.jsdelivr.net/npm/three@0.164.1/examples/jsm/controls/OrbitControls.js";
+
+    const lines = __LINES_JSON__;
+    const points = __POINTS_JSON__;
+    const viewer = document.getElementById("viewer");
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0xf8fafc);
+
+    const camera = new THREE.PerspectiveCamera(45, viewer.clientWidth / viewer.clientHeight, 0.01, 100);
+    camera.position.set(1.1, 0.9, -1.8);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setPixelRatio(window.devicePixelRatio);
+    renderer.setSize(viewer.clientWidth, viewer.clientHeight);
+    viewer.prepend(renderer.domElement);
+
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.target.set(0.0, 0.0, 0.0);
+
+    scene.add(new THREE.HemisphereLight(0xffffff, 0x94a3b8, 2.2));
+    const grid = new THREE.GridHelper(1.6, 16, 0xd1d5db, 0xe5e7eb);
+    grid.rotation.x = Math.PI / 2;
+    scene.add(grid);
+
+    function v(robotPoint) {
+      return new THREE.Vector3(robotPoint[0], robotPoint[2], robotPoint[1]);
+    }
+
+    function addLine(p1, p2, color) {
+      const geometry = new THREE.BufferGeometry().setFromPoints([v(p1), v(p2)]);
+      const material = new THREE.LineBasicMaterial({ color });
+      const line = new THREE.Line(geometry, material);
+      scene.add(line);
+    }
+
+    function makeLabel(text, color) {
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
+      canvas.width = 384;
+      canvas.height = 96;
+      ctx.font = "30px monospace";
+      ctx.fillStyle = "rgba(255,255,255,0.82)";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = color;
+      ctx.fillText(text, 12, 58);
+      const texture = new THREE.CanvasTexture(canvas);
+      const material = new THREE.SpriteMaterial({ map: texture, transparent: true });
+      const sprite = new THREE.Sprite(material);
+      sprite.scale.set(0.16, 0.04, 1);
+      return sprite;
+    }
+
+    for (const line of lines) {
+      addLine(line.p, line.c, line.type === "revolute" ? 0xd97706 : 0xa3a3a3);
+    }
+
+    for (const point of points) {
+      const kind = point.kind;
+      const color = kind === "base" ? 0x111827 : kind === "foot" ? 0x2563eb : 0x374151;
+      const radius = kind === "base" ? 0.018 : kind === "foot" ? 0.014 : 0.007;
+      const sphere = new THREE.Mesh(
+        new THREE.SphereGeometry(radius, 18, 12),
+        new THREE.MeshStandardMaterial({ color })
+      );
+      sphere.position.copy(v(point.p));
+      scene.add(sphere);
+      if (kind === "base" || kind === "foot") {
+        const label = makeLabel(point.name, kind === "base" ? "#111827" : "#2563eb");
+        label.position.copy(v(point.p).add(new THREE.Vector3(0.025, 0.025, 0)));
+        scene.add(label);
+      }
+    }
+
+    const axes = [
+      [[0,0,0], [0.35,0,0], 0xdc2626, "+X right"],
+      [[0,0,0], [0,0.35,0], 0x16a34a, "+Y forward"],
+      [[0,0,0], [0,0,0.35], 0x2563eb, "+Z up"],
+    ];
+    for (const [start, end, color, labelText] of axes) {
+      addLine(start, end, color);
+      const label = makeLabel(labelText, "#" + color.toString(16).padStart(6, "0"));
+      label.position.copy(v(end).add(new THREE.Vector3(0.02, 0.02, 0.02)));
+      scene.add(label);
+    }
+
+    const box = new THREE.Box3().setFromObject(scene);
+    const center = box.getCenter(new THREE.Vector3());
+    controls.target.copy(center);
+
+    function resize() {
+      const width = viewer.clientWidth;
+      const height = viewer.clientHeight;
+      camera.aspect = width / height;
+      camera.updateProjectionMatrix();
+      renderer.setSize(width, height);
+    }
+    window.addEventListener("resize", resize);
+
+    function animate() {
+      controls.update();
+      renderer.render(scene, camera);
+      requestAnimationFrame(animate);
+    }
+    resize();
+    animate();
+  </script>
 </body>
 </html>
 """
+    html = (
+        template.replace("__TOP_VIEW__", projection_svg("Top View: X right vs Y forward", 0, 1, "+X right", "+Y forward"))
+        .replace("__SIDE_VIEW__", projection_svg("Side View: Y forward vs Z up", 1, 2, "+Y forward", "+Z up"))
+        .replace("__FRONT_VIEW__", projection_svg("Front View: X right vs Z up", 0, 2, "+X right", "+Z up"))
+        .replace("__POSE_TABLE__", pose_table)
+        .replace("__LINES_JSON__", json.dumps(line_data))
+        .replace("__POINTS_JSON__", json.dumps(point_data))
+    )
     out_html.write_text(html)
     print(f"Saved: {out_html}")
     print("Standing joint pose:")
