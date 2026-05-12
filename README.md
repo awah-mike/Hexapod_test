@@ -47,6 +47,23 @@ in Fusion). `scripts/fix_urdf.py` converts them to `type="revolute"` with:
 | Femur | [0, +1.2217] | [-1.2217, 0] | 70°, asymmetric due to mirrored axes |
 | Tibia | [-2.4435, 0] | [0, +2.4435] | 140°, asymmetric due to mirrored axes |
 
+### Verified Isaac Lab standing pose
+
+The URDF zero pose has the legs spread horizontally, so it is not a usable spawn
+pose. The current verified Isaac Lab stance is defined in
+`source/hexapod_lab/hexapod_lab/assets/hexapod.py`:
+
+| Joint group | Angle |
+|---|---:|
+| All coxa joints | 0° |
+| Right femurs (`FR`/`MR`/`BR`) | +30° |
+| Left femurs (`FL`/`ML`/`BL`) | -30° |
+| Right tibias (`FR`/`MR`/`BR`) | -95° |
+| Left tibias (`FL`/`ML`/`BL`) | +95° |
+
+This stance settles at roughly 0.214 m base height in the Isaac Lab landing
+preview with the current idealized actuator settings.
+
 ### Inertia
 Mass per link type: coxa = 0.2 kg, femur = 1.0 kg, tibia = 0.7 kg (user-specified).
 Inertia tensors are diagonal placeholders (1e-4, 1e-3, 7e-4 kg·m²) about the
