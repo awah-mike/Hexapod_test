@@ -4,7 +4,7 @@ The front-right leg is the reference leg:
 
 * Femur slider value is applied to FR/MR/BR femur joints.
 * The negative of that value is applied to FL/ML/BL femur joints.
-* Tibia slider value is applied to FR/MR/BR tibia joints.
+* Tibia slider value is applied to FR/MR/BR tibia joints. This is negative for the corrected tibia limits.
 * The negative of that value is applied to FL/ML/BL tibia joints.
 * Coxa joints stay fixed at the current standing-pose value.
 
@@ -40,6 +40,14 @@ LEFT_FEMUR = ["FL_femur_joint", "ML_femur_joint", "BL_femur_joint"]
 RIGHT_TIBIA = ["FR_tibia_joint", "MR_tibia_joint", "BR_tibia_joint"]
 LEFT_TIBIA = ["FL_tibia_joint", "ML_tibia_joint", "BL_tibia_joint"]
 FOOT_LINKS = {"FL_tibia_1", "FR_tibia_1", "ML_tibia_1", "MR_tibia_1", "BL_tibia_1", "BR_tibia_1"}
+DEG = math.pi / 180.0
+
+FEMUR_MIN = 0.0
+FEMUR_MAX = 70.0 * DEG
+TIBIA_MIN = -140.0 * DEG
+TIBIA_MAX = 0.0
+DEFAULT_FR_FEMUR = 30.0 * DEG
+DEFAULT_FR_TIBIA = -85.0 * DEG
 
 
 @dataclass
@@ -188,16 +196,16 @@ class StandingPoseDashboard:
         self.femur_slider = Slider(
             femur_ax,
             "FR femur rad",
-            valmin=0.0,
-            valmax=1.221730,
+            valmin=FEMUR_MIN,
+            valmax=FEMUR_MAX,
             valinit=initial_femur,
             valstep=0.005,
         )
         self.tibia_slider = Slider(
             tibia_ax,
             "FR tibia rad",
-            valmin=-2.443461,
-            valmax=0.0,
+            valmin=TIBIA_MIN,
+            valmax=TIBIA_MAX,
             valinit=initial_tibia,
             valstep=0.005,
         )
@@ -226,7 +234,8 @@ class StandingPoseDashboard:
         self.ax.set_title(
             "Hexapod standing-pose dashboard\n"
             f"Apply: right femur={femur:.3f}, left femur={-femur:.3f}, "
-            f"right tibia={tibia:.3f}, left tibia={-tibia:.3f}, coxa={self.coxa:.3f}"
+            f"right tibia={tibia:.3f}, left tibia={-tibia:.3f}, coxa={self.coxa:.3f}\n"
+            f"Degrees: FR femur={femur / DEG:.1f}, FR tibia={tibia / DEG:.1f}"
         )
         self.ax.set_xlabel("+X right")
         self.ax.set_ylabel("+Y forward")
@@ -263,8 +272,10 @@ class StandingPoseDashboard:
 
         print(
             "\r"
-            f"Use these values in HEXAPOD_CFG: right femur={femur:.3f}, left femur={-femur:.3f}, "
-            f"right tibia={tibia:.3f}, left tibia={-tibia:.3f}",
+            f"Use in HEXAPOD_CFG: FR/MR/BR femur={femur:.6f} rad ({femur / DEG:.1f} deg), "
+            f"FL/ML/BL femur={-femur:.6f} rad; "
+            f"FR/MR/BR tibia={tibia:.6f} rad ({tibia / DEG:.1f} deg), "
+            f"FL/ML/BL tibia={-tibia:.6f} rad",
             end="",
             flush=True,
         )
@@ -277,8 +288,8 @@ def main() -> None:
     args = parser.parse_args()
 
     standing = load_standing_joint_pos()
-    initial_femur = float(args.femur if args.femur is not None else standing.get("FR_femur_joint", 0.55))
-    initial_tibia = float(args.tibia if args.tibia is not None else standing.get("FR_tibia_joint", 1.20))
+    initial_femur = float(args.femur if args.femur is not None else standing.get("FR_femur_joint", DEFAULT_FR_FEMUR))
+    initial_tibia = float(args.tibia if args.tibia is not None else standing.get("FR_tibia_joint", DEFAULT_FR_TIBIA))
     links, joints = parse_urdf()
 
     StandingPoseDashboard(links, joints, initial_femur, initial_tibia)
