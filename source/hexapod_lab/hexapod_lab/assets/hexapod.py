@@ -39,24 +39,24 @@ FOOT_BODY_NAMES = ["FL_tibia_1", "FR_tibia_1", "ML_tibia_1", "MR_tibia_1", "BL_t
 
 STANDING_JOINT_POS = {
     ".*_coxa_joint": 0.0,
-    "FR_femur_joint": 0.55,
-    "MR_femur_joint": 0.55,
-    "BR_femur_joint": 0.55,
-    "FL_femur_joint": -0.55,
-    "ML_femur_joint": -0.55,
-    "BL_femur_joint": -0.55,
-    "FR_tibia_joint": 1.20,
-    "MR_tibia_joint": 1.20,
-    "BR_tibia_joint": 1.20,
-    "FL_tibia_joint": -1.20,
-    "ML_tibia_joint": -1.20,
-    "BL_tibia_joint": -1.20,
+    "FR_femur_joint": 0.523599,
+    "MR_femur_joint": 0.523599,
+    "BR_femur_joint": 0.523599,
+    "FL_femur_joint": -0.523599,
+    "ML_femur_joint": -0.523599,
+    "BL_femur_joint": -0.523599,
+    "FR_tibia_joint": -1.483530,
+    "MR_tibia_joint": -1.483530,
+    "BR_tibia_joint": -1.483530,
+    "FL_tibia_joint": 1.483530,
+    "ML_tibia_joint": 1.483530,
+    "BL_tibia_joint": 1.483530,
 }
 """Nominal spawn pose.
 
 The signs are mirrored because the left and right femur/tibia joint axes are
 mirrored in the URDF. The values stay inside the documented limits:
-right femur/tibia are positive, left femur/tibia are negative.
+right femurs and left tibias are positive; left femurs and right tibias are negative.
 """
 
 ##

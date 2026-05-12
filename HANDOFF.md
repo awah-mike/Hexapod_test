@@ -118,7 +118,7 @@ Specific values:
 **Joint limits (asymmetric per side due to mirrored axes):**
 - Coxa: ±45°
 - Femur: right `[0, +70°]`, left `[-70°, 0]`
-- Tibia: right `[0, +140°]`, left `[-140°, 0]`
+- Tibia: right `[-140°, 0]`, left `[0, +140°]`
 
 **Masses:** coxa=0.2 kg, femur=1.0 kg, tibia=0.7 kg, base=11.26 kg.
 

@@ -45,7 +45,7 @@ in Fusion). `scripts/fix_urdf.py` converts them to `type="revolute"` with:
 |---|---|---|---|
 | Coxa | [-0.7854, +0.7854] | [-0.7854, +0.7854] | ±45° |
 | Femur | [0, +1.2217] | [-1.2217, 0] | 70°, asymmetric due to mirrored axes |
-| Tibia | [0, +2.4435] | [-2.4435, 0] | 140°, asymmetric due to mirrored axes |
+| Tibia | [-2.4435, 0] | [0, +2.4435] | 140°, asymmetric due to mirrored axes |
 
 ### Inertia
 Mass per link type: coxa = 0.2 kg, femur = 1.0 kg, tibia = 0.7 kg (user-specified).

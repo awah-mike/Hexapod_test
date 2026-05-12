@@ -196,8 +196,8 @@ class StandingPoseDashboard:
         self.tibia_slider = Slider(
             tibia_ax,
             "FR tibia rad",
-            valmin=0.0,
-            valmax=2.443461,
+            valmin=-2.443461,
+            valmax=0.0,
             valinit=initial_tibia,
             valstep=0.005,
         )
@@ -225,8 +225,8 @@ class StandingPoseDashboard:
         self.ax.clear()
         self.ax.set_title(
             "Hexapod standing-pose dashboard\n"
-            f"Apply: right femur/tibia = +({femur:.3f}, {tibia:.3f}), "
-            f"left femur/tibia = -({femur:.3f}, {tibia:.3f}), coxa = {self.coxa:.3f}"
+            f"Apply: right femur={femur:.3f}, left femur={-femur:.3f}, "
+            f"right tibia={tibia:.3f}, left tibia={-tibia:.3f}, coxa={self.coxa:.3f}"
         )
         self.ax.set_xlabel("+X right")
         self.ax.set_ylabel("+Y forward")
