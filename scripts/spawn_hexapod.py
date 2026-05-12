@@ -75,7 +75,15 @@ def main() -> None:
     sim = SimulationContext(sim_cfg)
     sim.set_camera_view([1.6, -2.4, 1.2], [0.0, 0.0, 0.15])
 
-    ground_cfg = sim_utils.GroundPlaneCfg()
+    ground_cfg = sim_utils.GroundPlaneCfg(
+        physics_material=sim_utils.RigidBodyMaterialCfg(
+            friction_combine_mode="multiply",
+            restitution_combine_mode="multiply",
+            static_friction=1.0,
+            dynamic_friction=1.0,
+            restitution=0.0,
+        )
+    )
     ground_cfg.func("/World/defaultGroundPlane", ground_cfg)
     light_cfg = sim_utils.DomeLightCfg(intensity=3000.0, color=(0.75, 0.75, 0.75))
     light_cfg.func("/World/Light", light_cfg)

@@ -90,21 +90,21 @@ HEXAPOD_CFG = ArticulationCfg(
     actuators={
         "coxa": ImplicitActuatorCfg(
             joint_names_expr=[".*_coxa_joint"],
-            effort_limit_sim=10.0,
+            effort_limit_sim=15.0,
             velocity_limit_sim=10.0,
             stiffness=40.0,
             damping=2.0,
         ),
         "femur": ImplicitActuatorCfg(
             joint_names_expr=[".*_femur_joint"],
-            effort_limit_sim=10.0,
+            effort_limit_sim=15.0,
             velocity_limit_sim=10.0,
             stiffness=40.0,
             damping=2.0,
         ),
         "tibia": ImplicitActuatorCfg(
             joint_names_expr=[".*_tibia_joint"],
-            effort_limit_sim=10.0,
+            effort_limit_sim=15.0,
             velocity_limit_sim=10.0,
             stiffness=40.0,
             damping=2.0,
