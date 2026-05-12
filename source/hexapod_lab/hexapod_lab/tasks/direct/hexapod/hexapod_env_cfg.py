@@ -81,7 +81,7 @@ class HexapodFlatEnvCfg(DirectRLEnvCfg):
     )
 
     # Command ranges in robot body frame. +Y is the robot's forward axis.
-    forward_velocity_range = (0.15, 0.75)
+    forward_velocity_range = (0.25, 0.75)
     lateral_velocity_range = (0.0, 0.0)
     yaw_velocity_range = (-0.4, 0.4)
 
