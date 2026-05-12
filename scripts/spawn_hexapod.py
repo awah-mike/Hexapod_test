@@ -15,6 +15,7 @@ For a short visual landing check with Isaac Sim / WebRTC, run without --headless
 from __future__ import annotations
 
 import argparse
+import csv
 import os
 from pathlib import Path
 
@@ -31,6 +32,18 @@ parser.add_argument(
     type=Path,
     default=None,
     help="Directory where initial and final viewport screenshots should be written.",
+)
+parser.add_argument(
+    "--diagnostics-csv",
+    type=Path,
+    default=None,
+    help="Optional CSV path for logging base height, joint errors, torques, and torque saturation.",
+)
+parser.add_argument(
+    "--diagnostics-every",
+    type=int,
+    default=1,
+    help="Write one diagnostics row every N physics steps when --diagnostics-csv is set.",
 )
 AppLauncher.add_app_launcher_args(parser)
 args_cli = parser.parse_args()
@@ -68,6 +81,11 @@ def capture_screenshot(path: Path) -> None:
         capture_iface.wait_async_capture()
         app.update()
     print(f"[INFO]: Wrote screenshot: {path}", flush=True)
+
+
+def _as_env_joint_tensor(value: torch.Tensor) -> torch.Tensor:
+    """Return a tensor with shape (num_envs, num_joints)."""
+    return value.unsqueeze(0) if value.ndim == 1 else value
 
 
 def main() -> None:
@@ -111,11 +129,66 @@ def main() -> None:
     num_steps = args_cli.steps if args_cli.steps is not None else max(1, int(args_cli.seconds / sim_dt))
     report_every = max(1, int(args_cli.report_interval / sim_dt))
     joint_target = robot.data.default_joint_pos.clone()
+    joint_names = list(robot.data.joint_names)
+    max_abs_applied_by_joint = torch.zeros(len(joint_names), device=robot.device)
+    max_abs_computed_by_joint = torch.zeros(len(joint_names), device=robot.device)
+    max_abs_error_by_joint = torch.zeros(len(joint_names), device=robot.device)
+    max_saturated_count = 0
+    diagnostics_file = None
+    diagnostics_writer = None
+    if args_cli.diagnostics_csv is not None:
+        args_cli.diagnostics_csv.parent.mkdir(parents=True, exist_ok=True)
+        diagnostics_file = args_cli.diagnostics_csv.open("w", newline="")
+        diagnostics_writer = csv.DictWriter(
+            diagnostics_file,
+            fieldnames=[
+                "step",
+                "time_s",
+                "base_z_m",
+                "max_abs_joint_pos_error_rad",
+                "max_abs_joint_vel_rad_s",
+                "max_abs_applied_torque_nm",
+                "max_abs_computed_torque_nm",
+                "max_effort_limit_nm",
+                "saturated_joint_count",
+            ],
+        )
+        diagnostics_writer.writeheader()
+
     for step in range(num_steps):
         robot.set_joint_position_target(joint_target)
         robot.write_data_to_sim()
         sim.step()
         robot.update(sim_dt)
+
+        joint_pos_error = torch.abs(joint_target - robot.data.joint_pos)
+        joint_vel = torch.abs(robot.data.joint_vel)
+        applied_torque = torch.abs(robot.data.applied_torque)
+        computed_torque = torch.abs(robot.data.computed_torque)
+        effort_limits = torch.abs(_as_env_joint_tensor(robot.data.joint_effort_limits))
+        saturated = applied_torque >= (0.98 * effort_limits)
+
+        max_abs_applied_by_joint = torch.maximum(max_abs_applied_by_joint, applied_torque[0])
+        max_abs_computed_by_joint = torch.maximum(max_abs_computed_by_joint, computed_torque[0])
+        max_abs_error_by_joint = torch.maximum(max_abs_error_by_joint, joint_pos_error[0])
+        saturated_count = int(torch.count_nonzero(saturated[0]).item())
+        max_saturated_count = max(max_saturated_count, saturated_count)
+
+        if diagnostics_writer is not None and step % max(1, args_cli.diagnostics_every) == 0:
+            diagnostics_writer.writerow(
+                {
+                    "step": step + 1,
+                    "time_s": f"{(step + 1) * sim_dt:.6f}",
+                    "base_z_m": f"{float(robot.data.root_pos_w[0, 2].item()):.6f}",
+                    "max_abs_joint_pos_error_rad": f"{float(torch.max(joint_pos_error).item()):.6f}",
+                    "max_abs_joint_vel_rad_s": f"{float(torch.max(joint_vel).item()):.6f}",
+                    "max_abs_applied_torque_nm": f"{float(torch.max(applied_torque).item()):.6f}",
+                    "max_abs_computed_torque_nm": f"{float(torch.max(computed_torque).item()):.6f}",
+                    "max_effort_limit_nm": f"{float(torch.max(effort_limits).item()):.6f}",
+                    "saturated_joint_count": saturated_count,
+                }
+            )
+
         if step % report_every == 0 or step == num_steps - 1:
             base_pos = robot.data.root_pos_w[0].detach().cpu().tolist()
             print(
@@ -128,6 +201,28 @@ def main() -> None:
     joint_pos = robot.data.joint_pos[0].detach().cpu()
     print("[INFO]: Final base position:", [round(x, 4) for x in base_pos], flush=True)
     print("[INFO]: Final joint range:", round(float(torch.min(joint_pos)), 4), round(float(torch.max(joint_pos)), 4), flush=True)
+    print(
+        "[INFO]: Max applied torque:",
+        round(float(torch.max(max_abs_applied_by_joint).item()), 4),
+        "Nm; max computed torque:",
+        round(float(torch.max(max_abs_computed_by_joint).item()), 4),
+        "Nm; max saturated joints:",
+        max_saturated_count,
+        flush=True,
+    )
+    top_k = min(8, len(joint_names))
+    top_torque_values, top_torque_ids = torch.topk(max_abs_applied_by_joint.detach().cpu(), k=top_k)
+    print("[INFO]: Top joints by max applied torque:", flush=True)
+    for value, joint_id in zip(top_torque_values.tolist(), top_torque_ids.tolist()):
+        print(
+            f"  - {joint_names[joint_id]}: applied={value:.4f} Nm, "
+            f"computed={float(max_abs_computed_by_joint[joint_id].item()):.4f} Nm, "
+            f"max_error={float(max_abs_error_by_joint[joint_id].item()):.4f} rad",
+            flush=True,
+        )
+    if diagnostics_file is not None:
+        diagnostics_file.close()
+        print(f"[INFO]: Wrote diagnostics CSV: {args_cli.diagnostics_csv}", flush=True)
     if args_cli.screenshot_dir is not None:
         capture_screenshot(args_cli.screenshot_dir / "hexapod_after_landing.png")
 
