@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import argparse
 import os
+from pathlib import Path
 
 from isaaclab.app import AppLauncher
 
@@ -25,6 +26,12 @@ parser.add_argument("--seconds", type=float, default=5.0, help="Duration to simu
 parser.add_argument("--hold-open", action="store_true", help="Keep the app open after the preview simulation finishes.")
 parser.add_argument("--report-interval", type=float, default=0.5, help="Seconds between base-height status prints.")
 parser.add_argument("--base-height", type=float, default=None, help="Override initial base/root height in meters.")
+parser.add_argument(
+    "--screenshot-dir",
+    type=Path,
+    default=None,
+    help="Directory where initial and final viewport screenshots should be written.",
+)
 AppLauncher.add_app_launcher_args(parser)
 args_cli = parser.parse_args()
 
@@ -38,6 +45,29 @@ from isaaclab.assets import Articulation
 from isaaclab.sim import SimulationContext
 
 from hexapod_lab.assets import HEXAPOD_CFG
+
+
+def capture_screenshot(path: Path) -> None:
+    """Capture the active Isaac Sim viewport to a PNG file."""
+    import omni.kit.app
+    import omni.renderer_capture
+    from omni.kit.viewport.utility import capture_viewport_to_file, get_active_viewport
+
+    path.parent.mkdir(parents=True, exist_ok=True)
+    viewport = get_active_viewport()
+    if viewport is None:
+        raise RuntimeError("No active viewport is available for screenshot capture.")
+
+    app = omni.kit.app.get_app()
+    for _ in range(4):
+        app.update()
+    capture = capture_viewport_to_file(viewport, file_path=str(path))
+    capture.wait_for_result(10)
+    capture_iface = omni.renderer_capture.acquire_renderer_capture_interface()
+    for _ in range(3):
+        capture_iface.wait_async_capture()
+        app.update()
+    print(f"[INFO]: Wrote screenshot: {path}", flush=True)
 
 
 def main() -> None:
@@ -67,6 +97,9 @@ def main() -> None:
     print("[INFO]: Default base height:", float(robot.data.default_root_state[0, 2].item()), flush=True)
 
     sim_dt = sim.get_physics_dt()
+    if args_cli.screenshot_dir is not None:
+        capture_screenshot(args_cli.screenshot_dir / "hexapod_initial_standing_pose.png")
+
     num_steps = args_cli.steps if args_cli.steps is not None else max(1, int(args_cli.seconds / sim_dt))
     report_every = max(1, int(args_cli.report_interval / sim_dt))
     joint_target = robot.data.default_joint_pos.clone()
@@ -87,6 +120,8 @@ def main() -> None:
     joint_pos = robot.data.joint_pos[0].detach().cpu()
     print("[INFO]: Final base position:", [round(x, 4) for x in base_pos], flush=True)
     print("[INFO]: Final joint range:", round(float(torch.min(joint_pos)), 4), round(float(torch.max(joint_pos)), 4), flush=True)
+    if args_cli.screenshot_dir is not None:
+        capture_screenshot(args_cli.screenshot_dir / "hexapod_after_landing.png")
 
     while args_cli.hold_open and simulation_app.is_running():
         robot.set_joint_position_target(joint_target)
