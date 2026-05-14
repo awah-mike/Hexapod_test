@@ -8,6 +8,7 @@ import csv
 import math
 import os
 import random
+import re
 import sys
 import xml.etree.ElementTree as ET
 from pathlib import Path
@@ -67,6 +68,11 @@ def _load_joint_limits() -> dict[str, tuple[float, float]]:
     return limits
 
 
+def _yaw_from_wxyz(quat: torch.Tensor) -> float:
+    w, x, y, z = [float(value) for value in quat]
+    return math.atan2(2.0 * (w * z + x * y), 1.0 - 2.0 * (y * y + z * z))
+
+
 @hydra_task_config(args_cli.task, args_cli.agent)
 def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agent_cfg: dict):
     env_cfg.scene.num_envs = args_cli.num_envs
@@ -124,22 +130,18 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agen
 
     def apply_fixed_command():
         if any(value is not None for value in fixed_command):
+            command_tensor = base_env._target_commands if hasattr(base_env, "_target_commands") else base_env._commands
             if fixed_command[0] is not None:
-                base_env._commands[:, 0] = fixed_command[0]
+                command_tensor[:, 0] = fixed_command[0]
             if fixed_command[1] is not None:
-                base_env._commands[:, 1] = fixed_command[1]
+                command_tensor[:, 1] = fixed_command[1]
             if fixed_command[2] is not None:
-                base_env._commands[:, 2] = fixed_command[2]
+                command_tensor[:, 2] = fixed_command[2]
 
     def patch_obs_command(obs_tensor):
         if any(value is not None for value in fixed_command):
             obs_tensor = obs_tensor.clone()
-            if fixed_command[0] is not None:
-                obs_tensor[:, 9] = fixed_command[0]
-            if fixed_command[1] is not None:
-                obs_tensor[:, 10] = fixed_command[1]
-            if fixed_command[2] is not None:
-                obs_tensor[:, 11] = fixed_command[2]
+            obs_tensor[:, 9:12] = base_env._commands
         return obs_tensor
 
     apply_fixed_command()
@@ -154,6 +156,38 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agen
         joint_names = list(getattr(base_env._robot, "joint_names", []))
     if not joint_names:
         joint_names = [f"joint_{idx}" for idx in range(base_env._actions.shape[1])]
+
+    def _safe_column_name(name: str) -> str:
+        return re.sub(r"[^A-Za-z0-9_]+", "_", name).strip("_")
+
+    raw_foot_ids = getattr(base_env, "_feet_ids", [])
+    if torch.is_tensor(raw_foot_ids):
+        foot_ids = [int(foot_id) for foot_id in raw_foot_ids.detach().cpu().tolist()]
+    else:
+        foot_ids = [int(foot_id) for foot_id in raw_foot_ids]
+    robot_body_names = list(getattr(base_env._robot.data, "body_names", []))
+    sensor_body_names = (
+        list(getattr(base_env._contact_sensor.data, "body_names", []))
+        or list(getattr(base_env._contact_sensor, "body_names", []))
+    )
+    default_foot_names = ["FL_tibia_1", "FR_tibia_1", "ML_tibia_1", "MR_tibia_1", "BL_tibia_1", "BR_tibia_1"]
+    foot_names = []
+    for idx, foot_id in enumerate(foot_ids):
+        if sensor_body_names and foot_id < len(sensor_body_names):
+            foot_names.append(_safe_column_name(str(sensor_body_names[foot_id])))
+        elif idx < len(default_foot_names):
+            foot_names.append(default_foot_names[idx])
+        else:
+            foot_names.append(f"foot_{idx}")
+    foot_body_ids = []
+    for foot_name in foot_names:
+        if robot_body_names and foot_name in robot_body_names:
+            foot_body_ids.append(robot_body_names.index(foot_name))
+        elif robot_body_names:
+            matching_ids = [idx for idx, body_name in enumerate(robot_body_names) if _safe_column_name(str(body_name)) == foot_name]
+            foot_body_ids.append(matching_ids[0] if matching_ids else None)
+        else:
+            foot_body_ids.append(None)
 
     args_cli.trace_csv.parent.mkdir(parents=True, exist_ok=True)
     joint_file = None
@@ -177,36 +211,64 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agen
                 "target_upper_margin",
                 "joint_lower_margin",
                 "joint_upper_margin",
+                "joint_vel",
+                "applied_torque",
             ],
         )
         joint_writer.writeheader()
 
     try:
         trace_file = args_cli.trace_csv.open("w", newline="")
+        trace_fieldnames = [
+            "step",
+            "time_s",
+            "done",
+            "x_w",
+            "y_w",
+            "z_w",
+            "qw_w",
+            "qx_w",
+            "qy_w",
+            "qz_w",
+            "yaw_w",
+            "vx_w",
+            "vy_w",
+            "vz_w",
+            "vx_b",
+            "vy_b",
+            "vz_b",
+            "cmd_x",
+            "cmd_y",
+            "cmd_yaw",
+            "gravity_b_x",
+            "gravity_b_y",
+            "gravity_b_z",
+            "flat_orientation",
+            "forward_tilt",
+            "action_mean_abs",
+            "action_max_abs",
+            "action_delta_mean_abs",
+            "joint_pos_delta_mean_abs",
+            "joint_vel_mean_abs",
+        ]
+        for foot_name in foot_names:
+            trace_fieldnames.extend(
+                [
+                    f"{foot_name}_force",
+                    f"{foot_name}_contact",
+                    f"{foot_name}_pos_x_w",
+                    f"{foot_name}_pos_y_w",
+                    f"{foot_name}_pos_z_w",
+                    f"{foot_name}_vel_x_w",
+                    f"{foot_name}_vel_y_w",
+                    f"{foot_name}_vel_z_w",
+                    f"{foot_name}_vel_xy_w",
+                    f"{foot_name}_drag_speed_w",
+                ]
+            )
         writer = csv.DictWriter(
             trace_file,
-            fieldnames=[
-                "step",
-                "time_s",
-                "done",
-                "x_w",
-                "y_w",
-                "z_w",
-                "vx_w",
-                "vy_w",
-                "vz_w",
-                "vx_b",
-                "vy_b",
-                "vz_b",
-                "cmd_x",
-                "cmd_y",
-                "cmd_yaw",
-                "action_mean_abs",
-                "action_max_abs",
-                "action_delta_mean_abs",
-                "joint_pos_delta_mean_abs",
-                "joint_vel_mean_abs",
-            ],
+            fieldnames=trace_fieldnames,
         )
         writer.writeheader()
         for step in range(args_cli.num_steps):
@@ -220,40 +282,88 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agen
                 done = bool(dones[0].item()) if torch.is_tensor(dones) else bool(dones[0])
 
             root_pos_w = base_env._robot.data.root_pos_w[0].detach().cpu()
+            root_quat_w = base_env._robot.data.root_quat_w[0].detach().cpu()
             root_lin_vel_w = base_env._robot.data.root_lin_vel_w[0].detach().cpu()
             root_lin_vel_b = base_env._robot.data.root_lin_vel_b[0].detach().cpu()
+            projected_gravity_b = base_env._robot.data.projected_gravity_b[0].detach().cpu()
+            flat_orientation = torch.sum(torch.square(projected_gravity_b[:2]))
+            forward_tilt = torch.square(projected_gravity_b[1])
             commands = base_env._commands[0].detach().cpu()
             joint_pos_delta = (base_env._robot.data.joint_pos[0] - base_env._robot.data.default_joint_pos[0]).detach().cpu()
             joint_vel = base_env._robot.data.joint_vel[0].detach().cpu()
             action_cpu = actions[0].detach().cpu()
             action_delta_cpu = action_delta[0].detach().cpu()
-            target_pos = (base_env.cfg.action_scale * actions[0] + base_env._robot.data.default_joint_pos[0]).detach().cpu()
+            action_scale = getattr(base_env, "_action_scale", base_env.cfg.action_scale)
+            if torch.is_tensor(action_scale):
+                action_scale = action_scale[0]
+            target_pos = (action_scale * actions[0] + base_env._robot.data.default_joint_pos[0]).detach().cpu()
             joint_pos = base_env._robot.data.joint_pos[0].detach().cpu()
-            writer.writerow(
-                {
-                    "step": step,
-                    "time_s": f"{step * base_env.step_dt:.4f}",
-                    "done": int(done),
-                    "x_w": f"{root_pos_w[0].item():.6f}",
-                    "y_w": f"{root_pos_w[1].item():.6f}",
-                    "z_w": f"{root_pos_w[2].item():.6f}",
-                    "vx_w": f"{root_lin_vel_w[0].item():.6f}",
-                    "vy_w": f"{root_lin_vel_w[1].item():.6f}",
-                    "vz_w": f"{root_lin_vel_w[2].item():.6f}",
-                    "vx_b": f"{root_lin_vel_b[0].item():.6f}",
-                    "vy_b": f"{root_lin_vel_b[1].item():.6f}",
-                    "vz_b": f"{root_lin_vel_b[2].item():.6f}",
-                    "cmd_x": f"{commands[0].item():.6f}",
-                    "cmd_y": f"{commands[1].item():.6f}",
-                    "cmd_yaw": f"{commands[2].item():.6f}",
-                    "action_mean_abs": f"{torch.mean(torch.abs(action_cpu)).item():.6f}",
-                    "action_max_abs": f"{torch.max(torch.abs(action_cpu)).item():.6f}",
-                    "action_delta_mean_abs": f"{torch.mean(torch.abs(action_delta_cpu)).item():.6f}",
-                    "joint_pos_delta_mean_abs": f"{torch.mean(torch.abs(joint_pos_delta)).item():.6f}",
-                    "joint_vel_mean_abs": f"{torch.mean(torch.abs(joint_vel)).item():.6f}",
-                }
-            )
+            net_contact_forces = base_env._contact_sensor.data.net_forces_w_history[0]
+            foot_force = torch.amax(torch.norm(net_contact_forces[:, foot_ids], dim=-1), dim=0).detach().cpu() if foot_ids else []
+            foot_pos_w = getattr(base_env._robot.data, "body_pos_w", None)
+            foot_vel_w = getattr(base_env._robot.data, "body_lin_vel_w", None)
+            trace_row = {
+                "step": step,
+                "time_s": f"{step * base_env.step_dt:.4f}",
+                "done": int(done),
+                "x_w": f"{root_pos_w[0].item():.6f}",
+                "y_w": f"{root_pos_w[1].item():.6f}",
+                "z_w": f"{root_pos_w[2].item():.6f}",
+                "qw_w": f"{root_quat_w[0].item():.6f}",
+                "qx_w": f"{root_quat_w[1].item():.6f}",
+                "qy_w": f"{root_quat_w[2].item():.6f}",
+                "qz_w": f"{root_quat_w[3].item():.6f}",
+                "yaw_w": f"{_yaw_from_wxyz(root_quat_w):.6f}",
+                "vx_w": f"{root_lin_vel_w[0].item():.6f}",
+                "vy_w": f"{root_lin_vel_w[1].item():.6f}",
+                "vz_w": f"{root_lin_vel_w[2].item():.6f}",
+                "vx_b": f"{root_lin_vel_b[0].item():.6f}",
+                "vy_b": f"{root_lin_vel_b[1].item():.6f}",
+                "vz_b": f"{root_lin_vel_b[2].item():.6f}",
+                "cmd_x": f"{commands[0].item():.6f}",
+                "cmd_y": f"{commands[1].item():.6f}",
+                "cmd_yaw": f"{commands[2].item():.6f}",
+                "gravity_b_x": f"{projected_gravity_b[0].item():.6f}",
+                "gravity_b_y": f"{projected_gravity_b[1].item():.6f}",
+                "gravity_b_z": f"{projected_gravity_b[2].item():.6f}",
+                "flat_orientation": f"{flat_orientation.item():.6f}",
+                "forward_tilt": f"{forward_tilt.item():.6f}",
+                "action_mean_abs": f"{torch.mean(torch.abs(action_cpu)).item():.6f}",
+                "action_max_abs": f"{torch.max(torch.abs(action_cpu)).item():.6f}",
+                "action_delta_mean_abs": f"{torch.mean(torch.abs(action_delta_cpu)).item():.6f}",
+                "joint_pos_delta_mean_abs": f"{torch.mean(torch.abs(joint_pos_delta)).item():.6f}",
+                "joint_vel_mean_abs": f"{torch.mean(torch.abs(joint_vel)).item():.6f}",
+            }
+            for foot_idx, foot_name in enumerate(foot_names):
+                force = foot_force[foot_idx].item()
+                contact = force > 1.0
+                trace_row[f"{foot_name}_force"] = f"{force:.6f}"
+                trace_row[f"{foot_name}_contact"] = int(contact)
+                body_id = foot_body_ids[foot_idx] if foot_idx < len(foot_body_ids) else None
+                if body_id is not None and foot_pos_w is not None and foot_vel_w is not None:
+                    pos_w = foot_pos_w[0, body_id].detach().cpu()
+                    vel_w = foot_vel_w[0, body_id].detach().cpu()
+                    vel_xy = torch.linalg.norm(vel_w[:2]).item()
+                    trace_row[f"{foot_name}_pos_x_w"] = f"{pos_w[0].item():.6f}"
+                    trace_row[f"{foot_name}_pos_y_w"] = f"{pos_w[1].item():.6f}"
+                    trace_row[f"{foot_name}_pos_z_w"] = f"{pos_w[2].item():.6f}"
+                    trace_row[f"{foot_name}_vel_x_w"] = f"{vel_w[0].item():.6f}"
+                    trace_row[f"{foot_name}_vel_y_w"] = f"{vel_w[1].item():.6f}"
+                    trace_row[f"{foot_name}_vel_z_w"] = f"{vel_w[2].item():.6f}"
+                    trace_row[f"{foot_name}_vel_xy_w"] = f"{vel_xy:.6f}"
+                    trace_row[f"{foot_name}_drag_speed_w"] = f"{vel_xy if contact else 0.0:.6f}"
+                else:
+                    trace_row[f"{foot_name}_pos_x_w"] = ""
+                    trace_row[f"{foot_name}_pos_y_w"] = ""
+                    trace_row[f"{foot_name}_pos_z_w"] = ""
+                    trace_row[f"{foot_name}_vel_x_w"] = ""
+                    trace_row[f"{foot_name}_vel_y_w"] = ""
+                    trace_row[f"{foot_name}_vel_z_w"] = ""
+                    trace_row[f"{foot_name}_vel_xy_w"] = ""
+                    trace_row[f"{foot_name}_drag_speed_w"] = ""
+            writer.writerow(trace_row)
             if joint_writer is not None and step % args_cli.joint_trace_every == 0:
+                applied_torque = base_env._robot.data.applied_torque[0].detach().cpu()
                 for joint_idx, joint_name in enumerate(joint_names):
                     lower, upper = joint_limits.get(joint_name, (float("nan"), float("nan")))
                     target = target_pos[joint_idx].item()
@@ -274,6 +384,8 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agen
                             "target_upper_margin": f"{upper - target:.6f}",
                             "joint_lower_margin": f"{pos - lower:.6f}",
                             "joint_upper_margin": f"{upper - pos:.6f}",
+                            "joint_vel": f"{joint_vel[joint_idx].item():.6f}",
+                            "applied_torque": f"{applied_torque[joint_idx].item():.6f}",
                         }
                     )
             if isinstance(obs, dict):

@@ -68,6 +68,9 @@ from hexapod_lab.assets import HEXAPOD_CFG
 
 def capture_screenshot(path: Path) -> None:
     """Capture the active Isaac Sim viewport to a PNG file."""
+    import asyncio
+    import inspect
+
     import omni.kit.app
     import omni.renderer_capture
     from omni.kit.viewport.utility import capture_viewport_to_file, get_active_viewport
@@ -81,7 +84,13 @@ def capture_screenshot(path: Path) -> None:
     for _ in range(4):
         app.update()
     capture = capture_viewport_to_file(viewport, file_path=str(path))
-    capture.wait_for_result(10)
+    result = capture.wait_for_result(10)
+    if inspect.isawaitable(result):
+        try:
+            asyncio.get_event_loop().run_until_complete(asyncio.wait_for(result, timeout=10.0))
+        except TimeoutError:
+            print(f"[WARN]: Timed out while waiting for screenshot capture: {path}", flush=True)
+            return
     capture_iface = omni.renderer_capture.acquire_renderer_capture_interface()
     for _ in range(3):
         capture_iface.wait_async_capture()

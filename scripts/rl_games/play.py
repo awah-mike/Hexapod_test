@@ -40,6 +40,20 @@ parser.add_argument("--real-time", action="store_true", default=False, help="Run
 parser.add_argument("--fixed_forward_velocity", type=float, default=None, help="Override command +Y velocity range.")
 parser.add_argument("--fixed_lateral_velocity", type=float, default=None, help="Override command +X velocity range.")
 parser.add_argument("--fixed_yaw_velocity", type=float, default=None, help="Override command yaw velocity range.")
+parser.add_argument(
+    "--camera_eye",
+    type=float,
+    nargs=3,
+    default=[3.5, -6.0, 2.2],
+    help="Playback camera eye position for video/viewer.",
+)
+parser.add_argument(
+    "--camera_target",
+    type=float,
+    nargs=3,
+    default=[0.0, 1.5, 0.25],
+    help="Playback camera look-at target for video/viewer.",
+)
 # append AppLauncher cli args
 AppLauncher.add_app_launcher_args(parser)
 # parse the arguments
@@ -152,6 +166,10 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agen
     # create isaac environment
     env = gym.make(args_cli.task, cfg=env_cfg, render_mode="rgb_array" if args_cli.video else None)
     base_env = env.unwrapped
+    try:
+        base_env.sim.set_camera_view(eye=args_cli.camera_eye, target=args_cli.camera_target)
+    except Exception as exc:
+        print(f"[WARN]: Could not set playback camera: {exc}")
 
     # convert to single-agent instance if required by the RL algorithm
     if isinstance(env.unwrapped, DirectMARLEnv):
@@ -209,24 +227,20 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agen
 
     def apply_fixed_command():
         if any(value is not None for value in fixed_command):
+            command_tensor = base_env._target_commands if hasattr(base_env, "_target_commands") else base_env._commands
             if fixed_command[0] is not None:
-                base_env._commands[:, 0] = fixed_command[0]
+                command_tensor[:, 0] = fixed_command[0]
             if fixed_command[1] is not None:
-                base_env._commands[:, 1] = fixed_command[1]
+                command_tensor[:, 1] = fixed_command[1]
             if fixed_command[2] is not None:
-                base_env._commands[:, 2] = fixed_command[2]
+                command_tensor[:, 2] = fixed_command[2]
 
     def patch_obs_command(obs_tensor):
         if isinstance(obs_tensor, dict):
             obs_tensor = obs_tensor["obs"]
         if any(value is not None for value in fixed_command):
             obs_tensor = obs_tensor.clone()
-            if fixed_command[0] is not None:
-                obs_tensor[:, 9] = fixed_command[0]
-            if fixed_command[1] is not None:
-                obs_tensor[:, 10] = fixed_command[1]
-            if fixed_command[2] is not None:
-                obs_tensor[:, 11] = fixed_command[2]
+            obs_tensor[:, 9:12] = base_env._commands
         return obs_tensor
 
     apply_fixed_command()
